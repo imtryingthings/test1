@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>St. Paul's College - Open Day Carbon Calculator</title>
+
+    <style>
+        :root {
+            --spc-navy: #0B2240;
+            --spc-gold: #D4AF37;
+            --spc-dark: #1C2D42;
+            --spc-bg: #F4F6F9;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Times New Roman', 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--spc-bg);
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 35px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(11, 34, 64, 0.08);
+            border-top: 6px solid var(--spc-navy);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .logo-area {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .logo-placeholder {
+            max-width: 120px;
+            height: auto;
+            margin-bottom: 12px;
+        }
+
+        .school-name {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--spc-navy);
+            letter-spacing: 0.5px;
+            margin: 0;
+            line-height: 1.3;
+        }
+
+        .page-title {
+            font-size: 15px;
+            color: #7f8c8d;
+            margin-top: 5px;
+            margin-bottom: 0;
+            font-weight: 500;
+        }
+
+        .form-group {
+            margin-bottom: 22px;
+        }
+
+        .conditional-box {
+            background-color: #F8FAFC;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px dashed #D1D5DB;
+            margin-bottom: 22px;
+            display: none;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--spc-dark);
+            font-size: 15px;
+            line-height: 1.4;
+        }
+
+        label span {
+            display: block;
+            font-size: 13px;
+            color: #6B7280;
+            font-weight: normal;
+        }
+
+        select, input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #D1D5DB;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 15px;
+            background-color: #FCFCFD;
+            transition: border-color 0.2s;
+        }
+
+        select:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: var(--spc-navy);
+        }
+
+        button {
+            width: 100%;
+            background-color: var(--spc-navy);
+            color: white;
+            padding: 14px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 4px rgba(11, 34, 64, 0.15);
+        }
+
+        button:hover {
+            background-color: #061324;
+            box-shadow: 0 4px 8px rgba(11, 34, 64, 0.25);
+        }
+
+        .result-box {
+            margin-top: 25px;
+            padding: 20px;
+            background-color: #F8FAFC;
+            border-left: 4px solid var(--spc-gold);
+            border-radius: 4px;
+            display: none;
+        }
+
+        .result-box h3 {
+            margin-top: 0;
+            color: var(--spc-navy);
+            font-size: 18px;
+        }
+
+        .highlight {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--spc-navy);
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+    <div class="logo-area">
+        <img class="logo-placeholder" src="https://upload.wikimedia.org/wikipedia/commons/5/5a/School_icon.svg" alt="SPC Logo" onerror="this.style.display='none';">
+        <div class="school-name">聖保羅書院<br>St. Paul's College</div>
+        <p class="page-title">開放日訪客出行碳排放問卷<br>Open Day Visitor Carbon Calculator</p>
+    </div>
+
+    <form id="carbonForm">
+        <div class="form-group">
+            <label for="transport">
+                1. 請選擇您今天的出行方式：
+                <span>Please select your mode of transport today:</span>
+            </label>
+            <select id="transport" required>
+                <option value="" disabled selected>-- Please Select --</option>
+                <option value="walking">步行 / 騎單車 (Walking / Cycling)</option>
+                <option value="subway">港鐵 / 地鐵 (MTR / Subway)</option>
+                <option value="bus">巴士 / 公共汽車 (Bus)</option>
+                <option value="car">私家車 / 計程車 (Private Car / Taxi)</option>
+            </select>
+        </div>
+
+        <div id="carOptions" class="conditional-box">
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label for="fuelType">
+                    1a. 汽車燃料類型：
+                    <span>Vehicle Fuel Type:</span>
+                </label>
+                <select id="fuelType">
+                    <option value="petrol">傳統燃油車 (Petrol / Diesel Car)</option>
+                    <option value="ev">電動車 (Electric Vehicle / EV)</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="passengers">
+                    1b. 同行乘車總人數（包括您自己）：
+                    <span>Total number of passengers (including yourself):</span>
+                </label>
+                <input type="number" id="passengers" min="1" value="1">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="distance">
+                2. 請估算從出發地到學校的單程距離 (公里)：
+                <span>Estimated single-trip distance to school (km):</span>
+            </label>
+            <input type="number" id="distance" min="0" step="0.1" placeholder="e.g. 12.5" required>
+        </div>
+
+        <button type="submit">確認送出並計算 / Calculate Carbon Footprint</button>
+    </form>
+
+    <div id="result" class="result-box">
+        <h3>計算結果 / Results</h3>
+        <p style="margin-bottom: 5px;">您本次行程的<strong>人均</strong>碳排放量為：<br><span style="font-size: 13px; color: #6B7280;">Your <em>per capita</em> carbon footprint for this trip is:</span></p>
+        <p style="margin-top: 5px;"><span id="emissionValue" class="highlight">0.00</span> 公斤 / kg CO₂e</p>
+        <div id="ecoTip" style="font-size: 14px; color: #444; line-height: 1.6; margin-top: 15px; border-top: 1px dashed #DDD; padding-top: 12px;"></div>
+    </div>
+</div>
+
+<script>
+    const EMISSION_FACTORS = {
+        walking: 0.000,
+        subway: 0.025,
+        bus: 0.050,
+        petrol: 0.180,
+        ev: 0.070
+    };
+
+    const transportSelect = document.getElementById('transport');
+    const carOptionsDiv = document.getElementById('carOptions');
+    const resultBox = document.getElementById('result');
+    const emissionValue = document.getElementById('emissionValue');
+    const ecoTip = document.getElementById('ecoTip');
+
+    transportSelect.addEventListener('change', function() {
+        const isCar = this.value === 'car';
+        carOptionsDiv.style.display = isCar ? 'block' : 'none';
+        document.getElementById('fuelType').required = isCar;
+        document.getElementById('passengers').required = isCar;
+    });
+
+    document.getElementById('carbonForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const transportMode = transportSelect.value;
+        const distance = parseFloat(document.getElementById('distance').value);
+
+        if (!transportMode) {
+            alert('Please select your transport mode.');
+            return;
+        }
+
+        if (isNaN(distance) || distance <= 0) {
+            alert('Please enter a valid distance greater than 0.');
+            return;
+        }
+
+        let factor = 0;
+        let passengers = 1;
+
+        if (transportMode === 'car') {
+            const fuelType = document.getElementById('fuelType').value;
+            factor = EMISSION_FACTORS[fuelType];
+            passengers = parseInt(document.getElementById('passengers').value, 10) || 1;
+        } else {
+            factor = EMISSION_FACTORS[transportMode];
+        }
+
+        const totalEmissions = (distance * factor) / passengers;
+        emissionValue.textContent = totalEmissions.toFixed(2);
+        resultBox.style.display = 'block';
+
+        let tipCh = '';
+        let tipEn = '';
+
+        if (transportMode === 'walking') {
+            tipCh = '感謝您！您選擇了完全零碳的綠色出行方式，為聖保羅的低碳校園環境做出完美貢獻！🌱';
+            tipEn = 'Thank you! You chose a zero-carbon green travel option, contributing perfectly to a low-carbon campus environment at SPC! 🌱';
+        } else if (transportMode === 'subway' || transportMode === 'bus') {
+            tipCh = '非常棒！感謝您搭乘大眾運輸工具，這比獨自開車減少了約 70% ~ 85% 的碳排放。🚌💨';
+            tipEn = 'Excellent! Thank you for taking public transit. This reduces carbon emissions by about 70% to 85% compared to driving alone. 🚌💨';
+        } else if (transportMode === 'car') {
+            const fuelType = document.getElementById('fuelType').value;
+            const savedWithSubway = ((distance * EMISSION_FACTORS[fuelType]) / passengers) - (distance * EMISSION_FACTORS.subway);
+
+            if (savedWithSubway > 0) {
+                tipCh = `如果您改乘港鐵，這次出行可減少約 ${savedWithSubway.toFixed(2)} 公斤 CO₂e，為環保出行出一分力。`;
+                tipEn = `If you switched to the MTR, this trip could cut around ${savedWithSubway.toFixed(2)} kg CO₂e, helping reduce the environmental impact.`;
+            } else {
+                tipCh = '若您能與更多人共乘，或改用大眾運輸，您的人均碳排放會進一步降低。';
+                tipEn = 'If you carpool with more people or switch to public transport, your per-person carbon emissions can be reduced even further.';
+            }
+        }
+
+        ecoTip.innerHTML = `${tipCh}<br><br>${tipEn}`;
+    });
+</script>
+
+</body>
+</html>
