@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f9;
+      margin: 0;
+      padding: 40px 20px;
+      color: #1c2d42;
+    }
+    .panel {
+      max-width: 420px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 6px 20px rgba(11,34,64,0.08);
+      padding: 28px;
+    }
+    h1 { margin-top: 0; }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      font-size: 15px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 4px;
+      background: #0b2240;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button:hover { background: #071a2d; }
+    #status {
+      margin-top: 14px;
+      color: #b91c1c;
+      min-height: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 8px 10px;
+      border: 1px solid #e5e7eb;
+      text-align: left;
+      vertical-align: top;
+      font-size: 13px;
+    }
+    th { background: #f8fafc; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <div id="loginView">
+      <h1>Admin Login</h1>
+      <label for="username">Username</label>
+      <input id="username" type="text" value="spc" />
+
+      <label for="password">Password</label>
+      <input id="password" type="password" placeholder="Password" />
+
+      <button id="loginBtn">Login</button>
+      <div id="status"></div>
+    </div>
+
+    <div id="dataView" class="hidden">
+      <h1>Submissions</h1>
+      <button id="logoutBtn" style="margin-bottom: 16px;">Logout</button>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Transport</th>
+            <th>Fuel</th>
+            <th>Distance</th>
+            <th>Group</th>
+            <th>Per Capita</th>
+            <th>Total</th>
+            <th>Timestamp</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const loginView = document.getElementById('loginView');
+    const dataView = document.getElementById('dataView');
+    const status = document.getElementById('status');
+    const rows = document.getElementById('rows');
+
+    async function login() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      status.textContent = '';
+
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+
+      if (!res.ok) {
+        status.textContent = 'Login failed. Check your username and password.';
+        return;
+      }
+
+      loginView.classList.add('hidden');
+      dataView.classList.remove('hidden');
+      loadSubmissions();
+    }
+
+    async function loadSubmissions() {
+      const res = await fetch('/api/submissions');
+      if (!res.ok) {
+        status.textContent = 'Session expired or unauthorized.';
+        dataView.classList.add('hidden');
+        loginView.classList.remove('hidden');
+        return;
+      }
+
+      const data = await res.json();
+      rows.innerHTML = '';
+
+      if (!data.rows || data.rows.length === 0) {
+        rows.innerHTML = '<tr><td colspan="8">No submissions yet.</td></tr>';
+        return;
+      }
+
+      for (const r of data.rows) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${r.id}</td>
+          <td>${r.transport || ''}</td>
+          <td>${r.fuelType || ''}</td>
+          <td>${Number(r.distance).toFixed(1)}</td>
+          <td>${r.groupSize || 1}</td>
+          <td>${Number(r.perCapita).toFixed(2)}</td>
+          <td>${Number(r.totalEmissions).toFixed(2)}</td>
+          <td>${r.timestamp || ''}</td>
+        `;
+        rows.appendChild(tr);
+      }
+    }
+
+    document.getElementById('loginBtn').addEventListener('click', login);
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await fetch('/api/logout', { method: 'POST' });
+      dataView.classList.add('hidden');
+      loginView.classList.remove('hidden');
+    });
+
+    document.getElementById('password').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') login();
+    });
+  </script>
+</body>
+</html>
