@@ -97,7 +97,7 @@
             font-weight: normal;
         }
 
-        select, input[type="number"] {
+        select, input[type="number"], input[type="text"] {
             width: 100%;
             padding: 12px;
             border: 1px solid #D1D5DB;
@@ -108,7 +108,7 @@
             transition: border-color 0.2s;
         }
 
-        select:focus, input[type="number"]:focus {
+        select:focus, input[type="number"]:focus, input[type="text"]:focus {
             outline: none;
             border-color: var(--spc-navy);
         }
@@ -152,6 +152,14 @@
             font-weight: bold;
             color: var(--spc-navy);
         }
+
+        .small-link {
+            display: block;
+            text-align: right;
+            margin-top: 8px;
+            font-size: 13px;
+        }
+
     </style>
 </head>
 
@@ -191,13 +199,7 @@
                 </select>
             </div>
 
-            <div class="form-group" style="margin-bottom: 0;">
-                <label for="passengers">
-                    1b. 同行乘車總人數（包括您自己）：
-                    <span>Total number of passengers (including yourself):</span>
-                </label>
-                <input type="number" id="passengers" min="1" value="1">
-            </div>
+            <!-- Note: passengers removed; using groupSize for per-capita calculations -->
         </div>
 
         <div class="form-group">
@@ -208,8 +210,18 @@
             <input type="number" id="distance" min="0" step="0.1" placeholder="e.g. 12.5" required>
         </div>
 
+        <div class="form-group">
+            <label for="groupSize">
+                3. 您與多少人一同來到聖保羅書院？（包括您自己）
+                <span>How many people did you come to St. Paul's College with? (include yourself)</span>
+            </label>
+            <input type="number" id="groupSize" min="1" value="1" required>
+        </div>
+
         <button type="submit">確認送出並計算 / Calculate Carbon Footprint</button>
     </form>
+
+    <a class="small-link" href="/admin.html">管理 / Login to view submissions</a>
 
     <div id="result" class="result-box">
         <h3>計算結果 / Results</h3>
@@ -238,14 +250,27 @@
         const isCar = this.value === 'car';
         carOptionsDiv.style.display = isCar ? 'block' : 'none';
         document.getElementById('fuelType').required = isCar;
-        document.getElementById('passengers').required = isCar;
     });
+
+    async function sendSubmission(payload) {
+        try {
+            await fetch('/api/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+        } catch (err) {
+            // Do not block the user if save fails; log to console.
+            console.error('Failed to save submission:', err);
+        }
+    }
 
     document.getElementById('carbonForm').addEventListener('submit', function(e) {
         e.preventDefault();
 
         const transportMode = transportSelect.value;
         const distance = parseFloat(document.getElementById('distance').value);
+        const groupSize = parseInt(document.getElementById('groupSize').value, 10) || 1;
 
         if (!transportMode) {
             alert('Please select your transport mode.');
@@ -257,19 +282,26 @@
             return;
         }
 
+        if (isNaN(groupSize) || groupSize < 1) {
+            alert('Please enter a valid group size (≥ 1).');
+            return;
+        }
+
         let factor = 0;
-        let passengers = 1;
 
         if (transportMode === 'car') {
             const fuelType = document.getElementById('fuelType').value;
             factor = EMISSION_FACTORS[fuelType];
-            passengers = parseInt(document.getElementById('passengers').value, 10) || 1;
         } else {
             factor = EMISSION_FACTORS[transportMode];
         }
 
-        const totalEmissions = (distance * factor) / passengers;
-        emissionValue.textContent = totalEmissions.toFixed(2);
+        // total emissions for the trip (single-trip distance * factor)
+        const totalEmissions = distance * factor;
+        // per-person emissions based on group size
+        const perCapita = totalEmissions / groupSize;
+
+        emissionValue.textContent = perCapita.toFixed(2);
         resultBox.style.display = 'block';
 
         let tipCh = '';
@@ -283,7 +315,7 @@
             tipEn = 'Excellent! Thank you for taking public transit. This reduces carbon emissions by about 70% to 85% compared to driving alone. 🚌💨';
         } else if (transportMode === 'car') {
             const fuelType = document.getElementById('fuelType').value;
-            const savedWithSubway = ((distance * EMISSION_FACTORS[fuelType]) / passengers) - (distance * EMISSION_FACTORS.subway);
+            const savedWithSubway = (distance * EMISSION_FACTORS[fuelType]) - (distance * EMISSION_FACTORS.subway);
 
             if (savedWithSubway > 0) {
                 tipCh = `如果您改乘港鐵，這次出行可減少約 ${savedWithSubway.toFixed(2)} 公斤 CO₂e，為環保出行出一分力。`;
@@ -295,6 +327,19 @@
         }
 
         ecoTip.innerHTML = `${tipCh}<br><br>${tipEn}`;
+
+        // Send submission to backend (best-effort)
+        const payload = {
+            transport: transportMode,
+            fuelType: transportMode === 'car' ? document.getElementById('fuelType').value : null,
+            distance: distance,
+            groupSize: groupSize,
+            perCapita: parseFloat(perCapita.toFixed(3)),
+            totalEmissions: parseFloat(totalEmissions.toFixed(3)),
+            timestamp: new Date().toISOString()
+        };
+
+        sendSubmission(payload);
     });
 </script>
 
